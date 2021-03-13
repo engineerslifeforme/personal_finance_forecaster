@@ -1,0 +1,17 @@
+inflation: 0.02
+returns: 0.07
+start_age: 25
+start_year: 2021
+start_month: 3
+start_balance:  100000.00
+stop_age: 100
+income:
+    - name: An Income
+      amount: 5000.00 # monthly
+      stop_age: 40
+      tax: 0.25
+expenses:
+    - name: mortgage
+      amount: 1500.00
+      stop_age: 50
+      inflate: False
