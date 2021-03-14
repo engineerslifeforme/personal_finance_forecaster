@@ -40,6 +40,10 @@ app.layout = html.Div([
         # Allow multiple files to be uploaded
         multiple=False
     ),
+    html.A(
+        children='Documentation',
+        href='https://personal-finance-forecaster.readthedocs.io/en/latest/'
+    ),
     html.Div(id='output-data-upload'),
     dcc.Textarea(
         id='textarea-example',
