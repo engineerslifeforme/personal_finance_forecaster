@@ -1,2 +1,3 @@
 *.pyc
 config.yaml
+docs/_build
