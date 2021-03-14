@@ -73,7 +73,7 @@ def parse_contents(contents):
 
 @app.callback(
     Output('textarea-example', 'value'),
-    Input('upload-data', 'contents'),
+    [Input('upload-data', 'contents')],
 )
 def update_upload_output(contents):
     if contents is not None:
