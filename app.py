@@ -7,7 +7,12 @@ from dash.dependencies import Input, Output, State, ClientsideFunction
 import dash_html_components as html
 import dash_core_components as dcc
 
-from business import assessment_plot
+from business import (
+    assessment_plot, 
+    assess,
+    income_plot,
+    expense_plot,
+)
 
 app = dash.Dash(__name__)
 
@@ -15,6 +20,8 @@ server = app.server
 
 with open('default.yaml', 'r') as fh:
     configuration_content = fh.read()
+
+balance_df, transaction_df = assess(configuration_content)
 
 app.layout = html.Div([
     html.H1(
@@ -54,20 +61,51 @@ app.layout = html.Div([
     html.Div(id='textarea-example-output', style={'whiteSpace': 'pre-line'}),
     dcc.Graph(
         id='graph',
-        figure=assessment_plot(configuration_content),
+        figure=assessment_plot(balance_df),
+    ),
+    dcc.Graph(
+        id='income_graph',
+        figure=income_plot(transaction_df)
+    ),
+    dcc.Graph(
+        id='expense_graph',
+        figure=expense_plot(transaction_df)
     )
 ])
 
 @app.callback(
     Output('graph', 'figure'),
+    Output('income_graph', 'figure'),
+    Output('expense_graph', 'figure'),
     [Input('my-button-events-example', 'n_clicks')],
     state=[State('textarea-example', 'value')]
 )
 def update_output(n_clicks, value):
-    return assessment_plot(value)
+    """ Update plots when update graph is clicked
+
+    :param n_clicks: number of times update has been clicked
+    :type n_clicks: int
+    :param value: configuration contents
+    :type value: str
+    :return: new plot
+    :rtype: plotly figure
+    """
+    balance_df, transaction_df = assess(value)
+    plots = (
+        assessment_plot(balance_df), 
+        income_plot(transaction_df),
+        expense_plot(transaction_df)
+    )
+    return plots
 
 def parse_contents(contents):
-    """
+    """ Parse textarea contents
+
+    :param contents: contents of text area, base64 encoded
+    :type contents: str
+    :return: decoded string
+    :rtype: str
+
     https://dash.plotly.com/dash-core-components/upload
     """
     _, content_string = contents.split(',')
@@ -80,6 +118,13 @@ def parse_contents(contents):
     [Input('upload-data', 'contents')],
 )
 def update_upload_output(contents):
+    """ Replace configuration with uploaded content
+
+    :param contents: base64 encoded content from textarea
+    :type contents: str
+    :return: New config content
+    :rtype: str
+    """
     if contents is not None:
         children = parse_contents(contents)
         return children
