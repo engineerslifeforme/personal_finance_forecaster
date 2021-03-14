@@ -25,7 +25,7 @@ app.layout = html.Div([
         id='upload-data',
         children=html.Div([
             'Drag and Drop or ',
-            html.A('Select Files')
+            html.A('Select Saved Config File')
         ]),
         style={
             'width': '100%',
