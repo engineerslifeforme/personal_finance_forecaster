@@ -11,6 +11,8 @@ from business import assessment_plot
 
 app = dash.Dash(__name__)
 
+server = app.server
+
 with open('default.yaml', 'r') as fh:
     configuration_content = fh.read()
 
