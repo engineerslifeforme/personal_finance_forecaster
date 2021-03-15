@@ -63,6 +63,17 @@ def lifetime_expense(transaction_df):
         title='Life Expense Totals',
     )
 
+def lifetime_income(transaction_df):
+    income = transaction_df[transaction_df['type'] == 'income']
+    gb = income.groupby('name')
+    sum_by_type = pandas.DataFrame(gb.sum()['value']).reset_index(drop=False)
+    return px.pie(
+        sum_by_type, 
+        names='name', 
+        values='value',
+        title='Lifetime Income Totals',
+    )
+
 def create_transaction(amount, meta_list=None):
     item = {'value': amount}
     for meta in meta_list:
