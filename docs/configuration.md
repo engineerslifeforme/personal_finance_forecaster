@@ -157,4 +157,8 @@ expenses:
   - X
   - boolean
   - Whether or not to apply inflation.  False = do not apply.  Default True.
+* - start_age
+  - X
+  - integer
+  - Age at which expense will start.  Default global start_age.
 ```
