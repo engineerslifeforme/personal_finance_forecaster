@@ -12,6 +12,7 @@ from business import (
     assess,
     income_plot,
     expense_plot,
+    lifetime_expense,
 )
 
 app = dash.Dash(__name__)
@@ -73,6 +74,10 @@ app.layout = html.Div([
             transaction_df['age'].min(),
             transaction_df['age'].max(),
         ])
+    ),
+    dcc.Graph(
+        id='lifetime_expenses',
+        figure=lifetime_expense(transaction_df)
     )
 ])
 
@@ -81,6 +86,7 @@ app.layout = html.Div([
         Output('graph', 'figure'),
         Output('income_graph', 'figure'),
         Output('expense_graph', 'figure'),
+        Output('lifetime_expenses', 'figure'),
     ],
     [Input('my-button-events-example', 'n_clicks')],
     [State('textarea-example', 'value')]
@@ -103,7 +109,8 @@ def update_output(n_clicks, value):
         expense_plot(transaction_df, [
             transaction_df['age'].min(),
             transaction_df['age'].max(),
-        ])
+        ]),
+        lifetime_expense(transaction_df),
     )
     return plots
 

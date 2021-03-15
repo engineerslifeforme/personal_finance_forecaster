@@ -52,6 +52,17 @@ def expense_plot(transaction_df, range_x):
         range_x=range_x,
     )
 
+def lifetime_expense(transaction_df):
+    expense = transaction_df[transaction_df['type'] == 'expense']
+    gb = expense.groupby('name')
+    sum_by_type = pandas.DataFrame(gb.sum()['value']).reset_index(drop=False)
+    return px.pie(
+        sum_by_type, 
+        names='name', 
+        values='value',
+        title='Life Expense Totals',
+    )
+
 def create_transaction(amount, meta_list=None):
     item = {'value': amount}
     for meta in meta_list:
