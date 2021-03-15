@@ -74,11 +74,13 @@ app.layout = html.Div([
 ])
 
 @app.callback(
-    Output('graph', 'figure'),
-    Output('income_graph', 'figure'),
-    Output('expense_graph', 'figure'),
+    [
+        Output('graph', 'figure'),
+        Output('income_graph', 'figure'),
+        Output('expense_graph', 'figure'),
+    ],
     [Input('my-button-events-example', 'n_clicks')],
-    state=[State('textarea-example', 'value')]
+    [State('textarea-example', 'value')]
 )
 def update_output(n_clicks, value):
     """ Update plots when update graph is clicked

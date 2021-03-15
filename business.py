@@ -68,7 +68,7 @@ def assess(config_content):
     :rtype: pandas dataframe
     """
 
-    config = yaml.load(config_content)
+    config = yaml.load(config_content, Loader=yaml.SafeLoader)
     
     start_age = config['start_age']
     current_age = start_age
