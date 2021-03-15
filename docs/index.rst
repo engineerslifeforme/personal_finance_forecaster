@@ -13,6 +13,7 @@ Contents:
 
    overview
    configuration
+   plots
    design
    future_features
    change_log
