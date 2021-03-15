@@ -40,16 +40,16 @@ def income_plot(transaction_df):
         title='Income Over Time'
     )
 
-def expense_plot(transaction_df):
-    transaction_df['positive_expenses'] = transaction_df['value'] * -1
-    expense = transaction_df[transaction_df['type'] == 'expense']
+def expense_plot(transaction_df, range_x):
     # Plot the expense as positive
     return px.bar(
-        expense, 
+        transaction_df[transaction_df['type'] == 'expense'], 
         x='age', 
-        y='positive_expenses', 
+        y='value', 
         color='name',
-        title='Expense Over Time'
+        title='Expense Over Time',
+        facet_row='type',
+        range_x=range_x,
     )
 
 def create_transaction(amount, meta_list=None):
@@ -107,19 +107,19 @@ def assess(config_content):
                         time_meta,
                         {'name': income['name'], 'type': 'income'}
                     ]))
-                    tax = income.get('tax', 0.0) * income_amount * -1
+                    tax = income.get('tax', 0.0) * income_amount
                     transaction_list.append(create_transaction(tax, [
                         time_meta,
                         {'name': income['name']+'_tax', 'type': 'expense'}
                     ]))
-                    income_amount = income_amount + tax
+                    income_amount = income_amount - tax
                     balance += income_amount
             for expense in config['expenses']:
                 expense_stop_age = expense.get('stop_age', stop_age + 1) # default never stop
                 expense_start_age = expense.get('start_age', start_age)
                 if current_age <= expense_stop_age and current_age >= expense_start_age:
                     inflate = expense.get('inflate', True)
-                    expense_amount = expense['amount'] * -1
+                    expense_amount = expense['amount']
                     if inflate:
                         expense_amount = future_value(
                             expense_amount,
@@ -130,7 +130,7 @@ def assess(config_content):
                         time_meta,
                         {'name': expense['name'], 'type': 'expense'}
                     ]))
-                    balance += expense_amount
+                    balance -= expense_amount
             balance_list.append({
                 'balance': balance,
                 'date': '{}-{}'.format(current_year, current_month),
@@ -142,4 +142,4 @@ def assess(config_content):
         current_age += 1
         current_year += 1
 
-    return pandas.DataFrame(balance_list), pandas.DataFrame(transaction_list)
+    return pandas.DataFrame(balance_list), pandas.DataFrame(transaction_list), config

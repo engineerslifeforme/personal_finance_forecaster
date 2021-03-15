@@ -21,7 +21,7 @@ server = app.server
 with open('default.yaml', 'r') as fh:
     configuration_content = fh.read()
 
-balance_df, transaction_df = assess(configuration_content)
+balance_df, transaction_df, config = assess(configuration_content)
 
 app.layout = html.Div([
     html.H1(
@@ -69,7 +69,10 @@ app.layout = html.Div([
     ),
     dcc.Graph(
         id='expense_graph',
-        figure=expense_plot(transaction_df)
+        figure=expense_plot(transaction_df, [
+            transaction_df['age'].min(),
+            transaction_df['age'].max(),
+        ])
     )
 ])
 
@@ -92,11 +95,15 @@ def update_output(n_clicks, value):
     :return: new plot
     :rtype: plotly figure
     """
-    balance_df, transaction_df = assess(value)
+    balance_df, transaction_df, config = assess(value)
+    #transaction_df.to_csv('transaction.csv')
     plots = (
         assessment_plot(balance_df), 
         income_plot(transaction_df),
-        expense_plot(transaction_df)
+        expense_plot(transaction_df, [
+            transaction_df['age'].min(),
+            transaction_df['age'].max(),
+        ])
     )
     return plots
 
