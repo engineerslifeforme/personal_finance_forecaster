@@ -3,6 +3,7 @@ import yaml
 import pandas
 import plotly.express as px
 import plotly
+import plotly.graph_objects as go
 import json
 
 def future_value(investment, rate, periods):
@@ -42,15 +43,27 @@ def income_plot(transaction_df):
 
 def expense_plot(transaction_df, range_x):
     # Plot the expense as positive
-    return px.bar(
-        transaction_df[transaction_df['type'] == 'expense'], 
+    income_by_date = transaction_df[transaction_df['type'] == 'income']\
+                     .groupby('age')\
+                     .sum()\
+                     .reset_index(drop=False)
+    expenses = transaction_df[transaction_df['type'] == 'expense']
+    fig = px.bar(
+        expenses, 
         x='age', 
         y='value', 
         color='name',
         title='Expense Over Time',
         facet_row='type',
-        range_x=range_x,
+        range_x=[35,100],
     )
+    fig.add_trace(
+        go.Scatter(
+            x=income_by_date['age'].values,
+            y=income_by_date['value'].values,
+            name='Total Income',
+        ))
+    return fig
 
 def lifetime_expense(transaction_df):
     expense = transaction_df[transaction_df['type'] == 'expense']
