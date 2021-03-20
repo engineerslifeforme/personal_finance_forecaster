@@ -55,7 +55,7 @@ def expense_plot(transaction_df, range_x):
         color='name',
         title='Expense Over Time',
         facet_row='type',
-        range_x=[35,100],
+        range_x=range_x,
     )
     fig.add_trace(
         go.Scatter(
