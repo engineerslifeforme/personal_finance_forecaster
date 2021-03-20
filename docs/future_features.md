@@ -5,3 +5,4 @@
 3. Easier YAML download
 4. Additional plots
 5. Assets and net worth
+6. Constants in the YAML content
