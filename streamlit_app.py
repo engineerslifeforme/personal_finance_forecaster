@@ -1,5 +1,6 @@
 from io import StringIO
 import locale
+import base64
 
 import streamlit as st
 import numpy as np
@@ -13,6 +14,7 @@ from business import (
     lifetime_expense,
     lifetime_income,
 )
+from streamlit_support import df_to_csv_download
 
 locale.setlocale(locale.LC_ALL, '')
 
@@ -40,6 +42,14 @@ configuration_edit = st.text_area(
     value=configuration_content,
     height=300,
 )
+if st.button(
+    'Download Configuration',
+    help='Save the current configuration locally',
+):
+    #https://raw.githubusercontent.com/MarcSkovMadsen/awesome-streamlit/master/gallery/file_download/file_download.py
+    b64 = base64.b64encode(configuration_edit.encode()).decode()  # some strings <-> bytes conversions necessary here
+    href = f'<a href="data:file/yaml;base64,{b64}">Download YAML File</a> (right-click and save as &lt;configuration&gt;.yaml)'
+    st.markdown(href, unsafe_allow_html=True)
 
 if st.button(
     'Analyze Forecast',
@@ -47,8 +57,18 @@ if st.button(
     ):
     balance_df, transaction_df, configuration = assess(configuration_edit)
     
-    balance_df.to_csv('balance.csv')
+    #balance_df.to_csv('balance.csv')
+
+    st.markdown('Download Balanace Data (CSV)')
+    href = df_to_csv_download(balance_df)
+    st.markdown(href, unsafe_allow_html=True)
+
+    st.markdown('Download Income and Expenses Data (CSV)')
+    href = df_to_csv_download(transaction_df)
+    st.markdown(href, unsafe_allow_html=True)
     
+    st.subheader('RESULTS')
+
     ending_balance = balance_df['balance'].values[-1]
     ending_balance_str = locale.currency(
         ending_balance,
@@ -72,4 +92,4 @@ if st.button(
     st.plotly_chart(lifetime_expense(transaction_df), use_container_width=True)
     st.plotly_chart(lifetime_income(transaction_df), use_container_width=True)
 
-""" Version 0.1 """
+""" Version 0.2 """
