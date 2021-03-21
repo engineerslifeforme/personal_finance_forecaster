@@ -14,3 +14,7 @@ I also recently found out that heroku hosts flask and dash apps for
 free.  I originally started with flask (which I was familiar with)
 and plotly, and I quickly remembered how frustrating that process
 can be.  I decided this might be an opportunity to try out dash. 
+
+# Development
+
+[Staging](https://afternoon-bastion-15215.herokuapp.com/)

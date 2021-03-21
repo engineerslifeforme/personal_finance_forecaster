@@ -5,6 +5,7 @@ import base64
 import streamlit as st
 import numpy as np
 import pandas as pd
+import yaml
 
 from business import (
     assessment_plot, 
@@ -15,11 +16,15 @@ from business import (
     lifetime_income,
 )
 from streamlit_support import df_to_csv_download
+import SessionState
 
 locale.setlocale(locale.LC_ALL, '')
 
+session_state = SessionState.get(expenses=[])
+
 with open('default.yaml', 'r') as fh:
     configuration_content = fh.read()
+    config = yaml.load(configuration_content, Loader=yaml.SafeLoader)
 
 st.set_page_config(layout='wide')
 
@@ -50,6 +55,58 @@ if st.button(
     b64 = base64.b64encode(configuration_edit.encode()).decode()  # some strings <-> bytes conversions necessary here
     href = f'<a href="data:file/yaml;base64,{b64}">Download YAML File</a> (right-click and save as &lt;configuration&gt;.yaml)'
     st.markdown(href, unsafe_allow_html=True)
+
+st.write(session_state.expenses)
+
+st.subheader('Income Sources')
+expense_name = st.text_input('Name')
+expense_amount = st.number_input('Amount ($/month)')
+if st.checkbox('Expense End Date'):
+
+
+if st.button('Add'):
+    session_state.expenses.append('two')
+
+if st.checkbox('GUI Configuration'):
+    st.slider(
+        'Age Range (Years)', 
+        min_value=0,
+        max_value=125,
+        value=(20,100),
+        step=1,
+    )
+    st.slider(
+        'Inflation (%)',
+        min_value=0.0,
+        max_value=10.0,
+        value=2.0,
+        step=0.1,
+    )
+    st.slider(
+        'Appreciation (%)',
+        min_value=0.0,
+        max_value=20.0,
+        value=7.0,
+        step=0.1,
+    )
+    st.slider(
+        'Start Year',
+        min_value=2021,
+        max_value=2121,
+        step=1,
+        value=2021,
+    )
+    st.slider(
+        'Start Month',
+        min_value=1,
+        max_value=12,
+        value=1,
+        step=1,
+    )
+    st.number_input(
+        'Starting Balance',
+        value=config['start_balance']
+    )
 
 if st.button(
     'Analyze Forecast',
