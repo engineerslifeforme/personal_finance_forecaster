@@ -118,6 +118,7 @@ def assess(config_content):
     period_count = 0
     while current_age <= stop_age:
         while current_month <= 12:
+            precise_age = current_age + (current_month - 1) / 12.0
             time_meta = {
                 'age': current_age + (current_month - 1) / 12.0,
                 'year': current_year,
@@ -130,29 +131,40 @@ def assess(config_content):
                 {'name': 'balance_appreciation', 'type': 'income'}
             ]))
             balance += appreciation
-            for income in config['income']:
-                income_stop_age = income.get('stop_age', stop_age + 1) # default never stop
-                if current_age <= income_stop_age:
-                    income_amount = future_value(
-                        income['amount'],
-                        config['inflation'] / 12.0,
-                        period_count
-                    )
-                    transaction_list.append(create_transaction(income_amount, [
-                        time_meta,
-                        {'name': income['name'], 'type': 'income'}
-                    ]))
-                    tax = income.get('tax', 0.0) * income_amount
-                    transaction_list.append(create_transaction(tax, [
-                        time_meta,
-                        {'name': income['name']+'_tax', 'type': 'expense'}
-                    ]))
-                    income_amount = income_amount - tax
-                    balance += income_amount
-            for expense in config['expenses']:
-                expense_stop_age = expense.get('stop_age', stop_age + 1) # default never stop
-                expense_start_age = expense.get('start_age', start_age)
-                if current_age <= expense_stop_age and current_age >= expense_start_age:
+            if 'income' in config:
+                for income in config['income']:
+                    income_stop_age = income.get('stop_age', stop_age + 1) # default never stop
+                    if current_age <= income_stop_age:
+                        income_amount = future_value(
+                            income['amount'],
+                            config['inflation'] / 12.0,
+                            period_count
+                        )
+                        transaction_list.append(create_transaction(income_amount, [
+                            time_meta,
+                            {'name': income['name'], 'type': 'income'}
+                        ]))
+                        tax = income.get('tax', 0.0) * income_amount
+                        if tax > 0.0:
+                            transaction_list.append(create_transaction(tax, [
+                                time_meta,
+                                {'name': income['name']+'_tax', 'type': 'expense'}
+                            ]))
+                            income_amount = income_amount - tax
+                        balance += income_amount
+            if 'expenses' in config:
+                for expense in config['expenses']:
+                    expense_stop_age = expense.get('stop_age', stop_age + 1) # default never stop
+                    expense_start_age = expense.get('start_age', start_age)
+                    record_transaction = True
+                    if 'one_time' in expense:
+                        if expense['one_time'] != precise_age:
+                            record_transaction = False        
+                    else:
+                        if current_age <= expense_stop_age and current_age >= expense_start_age:
+                            pass
+                        else:
+                            record_transaction = False
                     inflate = expense.get('inflate', True)
                     expense_amount = expense['amount']
                     if inflate:
@@ -161,15 +173,18 @@ def assess(config_content):
                             config['inflation'] / 12.0,
                             period_count
                         )
-                    transaction_list.append(create_transaction(expense_amount, [
-                        time_meta,
-                        {'name': expense['name'], 'type': 'expense'}
-                    ]))
-                    balance -= expense_amount
+                    if record_transaction:
+                        transaction_list.append(create_transaction(expense_amount, [
+                            time_meta,
+                            {'name': expense['name'], 'type': 'expense'}
+                        ]))
+                        balance -= expense_amount
+            if 'assets' in config:
+                pass
             balance_list.append({
                 'balance': balance,
                 'date': '{}-{}'.format(current_year, current_month),
-                'age': current_age + (current_month - 1) / 12.0,
+                'age': precise_age,
             })
             current_month += 1
             period_count += 1

@@ -119,7 +119,7 @@ Multiple sources of expense can be defined as a list
 in the configuration file.  Optional fields do not
 need to be included.
 
-```{note} Expenses increase according to inflation.
+```{note} Expenses increase according to inflation unless configured otherwise.
 ```
 
 ```{code-block} yaml
@@ -161,4 +161,60 @@ expenses:
   - X
   - integer
   - Age at which expense will start.  Default global start_age.
+* - one_time
+  - X
+  - int/float
+  - A one time expense of amount at this age, e.g. 35
+```
+
+### Expense Examples
+
+**Forever Expense**
+
+A $50.00 per month expense for forever.
+
+```{code-block} yaml
+- name: Internet Service
+  amount: 50.00
+```
+
+**Ending Expense**
+
+A $1,000.00 per month expense that ends at age 40.
+
+```{code-block} yaml
+- name: Day Care
+  amount: 1000.00
+  stop_age: 40 # When my child is 5
+```
+
+**Later Expense**
+
+A $500.00 per month expense that starts at age 60.
+
+```{code-block} yaml
+- name: Retirement Health Insurance
+  amount: 500.00
+  start_age: 60
+```
+
+**Later Starting and Ending**
+
+$1,000.00 per month expense starting at age 35 and ending at age 40.
+
+```{code-block} yaml
+- name: Day Care
+  amount: 1000.00
+  start_age: 35
+  stop_age: 40
+```
+
+**One Time Expense**
+
+One time expense of $20,000.00 at age 40.
+
+```{code-block} yaml
+- name: New Car
+  amount: 20000.00
+  one_time: 40
 ```

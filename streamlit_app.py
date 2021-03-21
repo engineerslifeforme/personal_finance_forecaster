@@ -1,10 +1,9 @@
+from io import StringIO
+import locale
+
 import streamlit as st
-# To make things easier later, we're also importing numpy and pandas for
-# working with sample data.
 import numpy as np
 import pandas as pd
-from io import StringIO
-from streamlit_ace import st_ace
 
 from business import (
     assessment_plot, 
@@ -14,6 +13,8 @@ from business import (
     lifetime_expense,
     lifetime_income,
 )
+
+locale.setlocale(locale.LC_ALL, '')
 
 with open('default.yaml', 'r') as fh:
     configuration_content = fh.read()
@@ -33,25 +34,33 @@ if previous_config:
         configuration_content = stringio.read()
 
 """[Documentation](https://personal-finance-forecaster.readthedocs.io/en/latest/)"""
+
 configuration_edit = st.text_area(
     'Configuration Editor',
     value=configuration_content,
-    height=200,
+    height=300,
 )
-
-content = st_ace(
-    placeholder=configuration_content,
-    language='yaml',
-    theme='pastel_on_dark',
-    keybinding='vscode',
-)
-content
 
 if st.button(
-    'Update Graphs',
-    help='Graphs will be generated from the configuration information above.'
+    'Analyze Forecast',
+    help='Forecast above will be analyzed to produce metrics and graphs'
     ):
     balance_df, transaction_df, configuration = assess(configuration_edit)
+    
+    balance_df.to_csv('balance.csv')
+    
+    ending_balance = balance_df['balance'].values[-1]
+    ending_balance_str = locale.currency(
+        ending_balance,
+        grouping=True,
+    )
+    st.write(f"Ending Balance: {ending_balance_str}")
+    if ending_balance < 0:
+        funds_extinguished_age = balance_df[balance_df['balance'].abs() == balance_df['balance'].abs().min()]['age'].values[0]
+        st.write(f'Funds extinguished at age {funds_extinguished_age}')
+    else:
+        st.write(f"Funds will support through age {configuration['stop_age']}")
+
     st.plotly_chart(assessment_plot(balance_df), use_container_width=True)
     st.plotly_chart(expense_plot(
         transaction_df, [
