@@ -94,7 +94,7 @@ def create_transaction(amount, meta_list=None):
             item[key] = meta[key]
     return item
 
-def assess(config_content):
+def assess(config):
     """ Run forecast over time according to config
 
     :param config_content: YAML configuration
@@ -103,7 +103,7 @@ def assess(config_content):
     :rtype: pandas dataframe
     """
 
-    config = yaml.load(config_content, Loader=yaml.SafeLoader)
+    #config = yaml.load(config_content, Loader=yaml.SafeLoader)
     
     start_age = config['start_age']
     current_age = start_age
