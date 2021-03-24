@@ -52,6 +52,9 @@ if previous_config:
     if uploaded_file is not None:
         stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
         configuration_content = stringio.read()
+        session_state.expenses = yaml.safe_load(configuration_content)
+
+        
 if mode != 'GUI':
     """[Documentation](https://personal-finance-forecaster.readthedocs.io/en/latest/)"""
 
