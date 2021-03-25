@@ -43,6 +43,7 @@ mode = st.sidebar.radio(
 
 """# Personal Finance Forecaster"""
 previous_config = st.checkbox('Upload a previously saved configuration [OPTIONAL]')
+"""## Forecast Configuration"""
 if previous_config:
     uploaded_file = st.file_uploader(
         '[OPTIONAL] Configuration Upload', 
@@ -108,51 +109,52 @@ else: # GUI Configuration
         value=config['start_balance']
     )
 
-st.subheader('Income Sources')
+"""## Income Sources"""
 income_table = st.empty()
 if mode == 'GUI':
-    if st.checkbox('Add Additional Income'):
-        income_name = st.text_input('Income Source Name')
-        income_amount = st.number_input('Income Source Amount ($/month)')
-        use_income_end_age = st.checkbox('Income End Age [OPTIONAL]')
-        if use_income_end_age:
-            income_end_age = st.slider(
-                'Income End Age',
-                min_value=selected_age_range[0],
-                max_value=selected_age_range[1],
-                step=1,
-            )
-        include_income_tax = st.checkbox('Income Tax [OPTIONAL]')
-        if include_income_tax:
-            income_tax = st.slider(
-                'Income Tax Rate (%)',
-                min_value=0,
-                max_value=100,
-                step=1,
-            )
-        if st.button('Add Income Source'):
-            income_item = {
-                'name': income_name,
-                'amount': income_amount,
-            }
-            if include_income_tax:
-                income_item['tax'] = float(income_tax)/100.0
+    if st.checkbox('Modify Income'):
+        if st.checkbox('Add Additional Income'):
+            income_name = st.text_input('Income Source Name')
+            income_amount = st.number_input('Income Source Amount ($/month)')
+            use_income_end_age = st.checkbox('Income End Age [OPTIONAL]')
             if use_income_end_age:
-                income_item['stop_age'] = income_end_age
-            session_state.expenses['income'].append(income_item)
-    if st.checkbox('Delete Income Item'):
-        delete_row = st.number_input(
-            'Row Number to Delete',
-            value=0,
-            min_value=0,
-            max_value = len(session_state.expenses['income']),
-            step=1,
-        )
-        if st.button('Delete Row'):
-            del session_state.expenses['income'][delete_row]
+                income_end_age = st.slider(
+                    'Income End Age',
+                    min_value=selected_age_range[0],
+                    max_value=selected_age_range[1],
+                    step=1,
+                )
+            include_income_tax = st.checkbox('Income Tax [OPTIONAL]')
+            if include_income_tax:
+                income_tax = st.slider(
+                    'Income Tax Rate (%)',
+                    min_value=0,
+                    max_value=100,
+                    step=1,
+                )
+            if st.button('Add Income Source'):
+                income_item = {
+                    'name': income_name,
+                    'amount': income_amount,
+                }
+                if include_income_tax:
+                    income_item['tax'] = float(income_tax)/100.0
+                if use_income_end_age:
+                    income_item['stop_age'] = income_end_age
+                session_state.expenses['income'].append(income_item)
+        if st.checkbox('Delete Income Item'):
+            delete_row = st.number_input(
+                'Row Number to Delete',
+                value=0,
+                min_value=0,
+                max_value = len(session_state.expenses['income']),
+                step=1,
+            )
+            if st.button('Delete Row'):
+                del session_state.expenses['income'][delete_row]
 income_table.table(pd.DataFrame(session_state.expenses['income']).fillna(''))
 
-st.subheader('Expense Sources')
+"""## Expenses Sources"""
 expense_table = st.empty()
 if mode == 'GUI':
     if st.checkbox('Modify Expenses'):
@@ -194,8 +196,10 @@ if mode == 'GUI':
 
 expense_table.table(pd.DataFrame(session_state.expenses['expenses']).fillna(''))
 
+""" # Results """
+
 if st.button(
-    'Download Configuration',
+    'Download Forecast Configuration',
     help='Save the current configuration locally',
 ):
     #https://raw.githubusercontent.com/MarcSkovMadsen/awesome-streamlit/master/gallery/file_download/file_download.py
@@ -207,15 +211,13 @@ balance_df, transaction_df, configuration = assess(session_state.expenses)
 
 #balance_df.to_csv('balance.csv')
 
-st.markdown('Download Balanace Data (CSV)')
-href = df_to_csv_download(balance_df)
+href = df_to_csv_download(balance_df, 'Download Balance Data (CSV)')
 st.markdown(href, unsafe_allow_html=True)
 
-st.markdown('Download Income and Expenses Data (CSV)')
-href = df_to_csv_download(transaction_df)
+href = df_to_csv_download(transaction_df, 'Download Income and Expenses Data (CSV)')
 st.markdown(href, unsafe_allow_html=True)
 
-st.subheader('RESULTS')
+"""### Key Statistics"""
 
 ending_balance = balance_df['balance'].values[-1]
 ending_balance_str = locale.currency(
@@ -229,15 +231,24 @@ if ending_balance < 0:
 else:
     st.write(f"Funds will support through age {configuration['stop_age']}")
 
+"""### Plots"""
+
 st.plotly_chart(assessment_plot(balance_df), use_container_width=True)
-st.plotly_chart(expense_plot(
-    transaction_df, [
-        transaction_df['age'].min(),
-        transaction_df['age'].max(),
-    ]),
+st.plotly_chart(
+    income_plot(transaction_df),
     use_container_width=True
 )
-st.plotly_chart(lifetime_expense(transaction_df), use_container_width=True)
-st.plotly_chart(lifetime_income(transaction_df), use_container_width=True)
+st.plotly_chart(
+    expense_plot(
+        transaction_df, [
+            transaction_df['age'].min(),
+            transaction_df['age'].max(),
+        ]),
+    use_container_width=True
+)
+
+left, right = st.beta_columns(2)
+left.plotly_chart(lifetime_expense(transaction_df), use_container_width=True)
+right.plotly_chart(lifetime_income(transaction_df), use_container_width=True)
 
 """ Version 0.2 """
