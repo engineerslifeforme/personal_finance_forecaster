@@ -1,10 +1,24 @@
+import pathlib
+
 import streamlit as st
 import yaml
 import streamlit.components.v1 as components
+from bs4 import BeautifulSoup
 
 import SessionState
 from forecast_designer import load_forecast_designer
 from forecast_compare import load_forecast_compare
+
+GA_JS = """<script data-ad-client="ca-pub-1479523501051314" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>"""
+
+# Insert the script in the head tag of the static template inside your virtual environement
+index_path = pathlib.Path(st.__file__).parent / "static" / "index.html"
+soup = BeautifulSoup(index_path.read_text(), features="lxml")
+if not soup.find(id='custom-js'):
+    script_tag = soup.new_tag("script", id='custom-js')
+    script_tag.string = GA_JS
+    soup.head.append(script_tag)
+    index_path.write_text(str(soup))
 
 session_state = SessionState.get(expenses=None)
 
@@ -40,7 +54,3 @@ else:
     st.write('Unknown Analysis Mode!')
 
 """ Version 0.3 """
-
-HtmlFile = open('ads.html', 'r', encoding='utf-8')
-source_code = HtmlFile.read()
-components.html(source_code, height=600)

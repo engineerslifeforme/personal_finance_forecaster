@@ -24,3 +24,5 @@ Werkzeug==1.0.1
 pandas
 pyyaml
 streamlit
+beautifulsoup4
+lxml
