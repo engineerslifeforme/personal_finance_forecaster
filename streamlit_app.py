@@ -41,6 +41,6 @@ else:
 
 """ Version 0.3 """
 
-HtmlFile = open('test.html', 'r', encoding='utf-8')
+HtmlFile = open('ads.html', 'r', encoding='utf-8')
 source_code = HtmlFile.read()
 components.html(source_code, height=600)
