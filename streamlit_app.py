@@ -1,5 +1,6 @@
 import streamlit as st
 import yaml
+import streamlit.components.v1 as components
 
 import SessionState
 from forecast_designer import load_forecast_designer
@@ -39,3 +40,7 @@ else:
     st.write('Unknown Analysis Mode!')
 
 """ Version 0.3 """
+
+HtmlFile = open('test.html', 'r', encoding='utf-8')
+source_code = HtmlFile.read()
+components.html(source_code, height=600)
