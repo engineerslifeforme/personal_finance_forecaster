@@ -64,7 +64,8 @@ def assess(config):
             ]))
             balance += appreciation
             if 'income' in config:
-                for income in config['income']:
+                for income_name in config['income']:
+                    income = config['income'][income_name]
                     income_stop_age = income.get('stop_age', stop_age + 1) # default never stop
                     if current_age <= income_stop_age:
                         income_amount = future_value(
@@ -74,18 +75,19 @@ def assess(config):
                         )
                         transaction_list.append(create_transaction(income_amount, [
                             time_meta,
-                            {'name': income['name'], 'type': 'income'}
+                            {'name': income_name, 'type': 'income'}
                         ]))
                         tax = income.get('tax', 0.0) * income_amount
                         if tax > 0.0:
                             transaction_list.append(create_transaction(tax, [
                                 time_meta,
-                                {'name': income['name']+'_tax', 'type': 'expense'}
+                                {'name': income_name+'_tax', 'type': 'expense'}
                             ]))
                             income_amount = income_amount - tax
                         balance += income_amount
             if 'expenses' in config:
-                for expense in config['expenses']:
+                for expense_name in config['expenses']:
+                    expense = config['expenses'][expense_name]
                     expense_stop_age = expense.get('stop_age', stop_age + 1) # default never stop
                     expense_start_age = expense.get('start_age', start_age)
                     record_transaction = True
@@ -108,7 +110,7 @@ def assess(config):
                     if record_transaction:
                         transaction_list.append(create_transaction(expense_amount, [
                             time_meta,
-                            {'name': expense['name'], 'type': 'expense'}
+                            {'name': expense_name, 'type': 'expense'}
                         ]))
                         balance -= expense_amount
             if 'assets' in config:

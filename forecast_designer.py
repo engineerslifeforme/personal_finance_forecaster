@@ -3,6 +3,7 @@
 import locale
 import base64
 from io import StringIO
+import copy
 
 import pandas as pd
 import yaml
@@ -18,10 +19,10 @@ from designer_plots import (
     assessment_plot,
 )
 from streamlit_support import df_to_csv_download
+from constants import AGE_RANGE
+from income_editor import income_editor_dialog
 
 locale.setlocale(locale.LC_ALL, '')
-
-AGE_RANGE = [0, 125]
 
 def load_forecast_designer(st, session_state, config, configuration_content):
     mode = st.sidebar.radio(
@@ -30,9 +31,12 @@ def load_forecast_designer(st, session_state, config, configuration_content):
     )
 
     """# Personal Finance Forecaster"""
-    previous_config = st.checkbox('Upload a previously saved configuration [OPTIONAL]')
+    #previous_config = st.checkbox('Upload a previously saved configuration [OPTIONAL]')
+    operation_mode = st.radio('Live or Upload', ['Live', 'Upload Previously Saved Forecast'])
     """## Forecast Configuration"""
-    if previous_config:
+    if operation_mode == 'Upload Previously Saved Forecast':
+        st.markdown("""**Note**: Switch back to `Live` mode once the upload has completed to edit the forecast.
+Changes will be ignored in `Upload` mode.""")
         uploaded_file = st.file_uploader(
             '[OPTIONAL] Configuration Upload', 
             type=['yaml', 'yml', 'txt'],
@@ -43,7 +47,10 @@ def load_forecast_designer(st, session_state, config, configuration_content):
             configuration_content = stringio.read()
             session_state.expenses = yaml.safe_load(configuration_content)
 
-            
+    st.markdown('## Summary')
+    headers = st.beta_columns(2)
+    
+    configuration_edit = None
     if mode != 'GUI':
         """[Documentation](https://personal-finance-forecaster.readthedocs.io/en/latest/)"""
 
@@ -55,156 +62,196 @@ def load_forecast_designer(st, session_state, config, configuration_content):
         session_state.expenses = yaml.safe_load(configuration_edit)
 
     else: # GUI Configuration
-        selected_age_range = st.slider(
-            'Age Range (Years)', 
-            min_value=AGE_RANGE[0],
-            max_value=AGE_RANGE[1],
-            value=(20,100),
-            step=1,
-        )
-        session_state.expenses['start_age'] = int(selected_age_range[0])
-        session_state.expenses['stop_age'] = int(selected_age_range[1])
-        session_state.expenses['inflation'] = (st.slider(
-            'Inflation (%)',
-            min_value=0.0,
-            max_value=10.0,
-            value=2.0,
-            step=0.1,
-        ))/100.0
-        session_state.expenses['returns'] = (st.slider(
-            'Appreciation (%)',
-            min_value=0.0,
-            max_value=20.0,
-            value=7.0,
-            step=0.1,
-        ))/100.0
-        session_state.expenses['start_year'] = st.slider(
-            'Start Year',
-            min_value=2021,
-            max_value=2121,
-            step=1,
-            value=2021,
-        )
-        session_state.expenses['start_month'] = st.slider(
-            'Start Month',
-            min_value=1,
-            max_value=12,
-            value=1,
-            step=1,
-        )
-        session_state.expenses['start_balance'] = st.number_input(
-            'Starting Balance',
-            value=config['start_balance']
-        )
-
-    """## Income Sources"""
-    income_table = st.empty()
-    if mode == 'GUI':
-        if st.checkbox('Modify Income'):
-            if st.checkbox('Add Additional Income'):
-                income_name = st.text_input('Income Source Name')
-                income_amount = st.number_input('Income Source Amount ($/month)')
-                use_income_end_age = st.checkbox('Income End Age [OPTIONAL]')
-                if use_income_end_age:
-                    income_end_age = st.slider(
-                        'Income End Age',
-                        min_value=selected_age_range[0],
-                        max_value=selected_age_range[1],
-                        step=1,
-                    )
-                include_income_tax = st.checkbox('Income Tax [OPTIONAL]')
-                if include_income_tax:
-                    income_tax = st.slider(
-                        'Income Tax Rate (%)',
-                        min_value=0,
-                        max_value=100,
-                        step=1,
-                    )
-                if st.button('Add Income Source'):
-                    income_item = {
-                        'name': income_name,
-                        'amount': income_amount,
-                    }
-                    if include_income_tax:
-                        income_item['tax'] = float(income_tax)/100.0
-                    if use_income_end_age:
-                        income_item['stop_age'] = income_end_age
-                    session_state.expenses['income'].append(income_item)
-            if st.checkbox('Delete Income Item'):
-                delete_row = st.number_input(
-                    'Row Number to Delete',
-                    value=0,
-                    min_value=0,
-                    max_value = len(session_state.expenses['income']),
-                    step=1,
-                )
-                if st.button('Delete Row'):
-                    del session_state.expenses['income'][delete_row]
-    income_table.table(pd.DataFrame(session_state.expenses['income']).fillna(''))
-
-    """## Expenses Sources"""
-    expense_table = st.empty()
-    if mode == 'GUI':
-        if st.checkbox('Modify Expenses'):
-            add_expense_col, del_expense_col = st.beta_columns(2)
-            add_expense_col.subheader('Add Expense')
-            expense_name = add_expense_col.text_input('Expense Source Name')
-            expense_amount = add_expense_col.number_input(
-                'Expense Source Amount ($/month)',
-                step=0.01
-            )
-            use_expense_end_age = add_expense_col.checkbox('Expense End Age [OPTIONAL]')
-            inflate = not add_expense_col.checkbox('Do Not Apply Inflation')
-            if use_expense_end_age:
-                expense_end_age = add_expense_col.slider(
-                    'Expense End Age',
-                    min_value=selected_age_range[0],
-                    max_value=selected_age_range[1],
-                    step=1,
-                )
-            if add_expense_col.button('Add Expense Source'):
-                expense_item = {
-                    'name': expense_name,
-                    'amount': expense_amount,
-                }
-                if use_expense_end_age:
-                    expense_item['stop_age'] = expense_end_age
-                session_state.expenses['expenses'].append(expense_item)
-            
-            del_expense_col.subheader('Delete Expense')
-            delete_row = del_expense_col.number_input(
-                'Row Number to Delete',
-                value=0,
-                min_value=0,
-                max_value = len(session_state.expenses['expenses']),
+        with st.beta_expander('Forecast Configuration'):
+            selected_age_range = st.slider(
+                'Age Range (Years)', 
+                min_value=AGE_RANGE[0],
+                max_value=AGE_RANGE[1],
+                value=(session_state.expenses['start_age'],session_state.expenses['stop_age']),
                 step=1,
             )
-            if del_expense_col.button('Delete Row'):
-                del session_state.expenses['expenses'][delete_row]
+            session_state.expenses['start_age'] = int(selected_age_range[0])
+            session_state.expenses['stop_age'] = int(selected_age_range[1])
+            session_state.expenses['inflation'] = (st.slider(
+                'Inflation (%)',
+                min_value=0.0,
+                max_value=10.0,
+                value=session_state.expenses['inflation']*100.0,
+                step=0.1,
+            ))/100.0
+            session_state.expenses['returns'] = (st.slider(
+                'Appreciation (%)',
+                min_value=0.0,
+                max_value=20.0,
+                value=session_state.expenses['returns']*100.0,
+                step=0.1,
+            ))/100.0
+            session_state.expenses['start_year'] = st.slider(
+                'Start Year',
+                min_value=2021,
+                max_value=2121,
+                step=1,
+                value=session_state.expenses['start_year'],
+            )
+            session_state.expenses['start_month'] = st.slider(
+                'Start Month',
+                min_value=1,
+                max_value=12,
+                value=session_state.expenses['start_month'],
+                step=1,
+            )
+            session_state.expenses['start_balance'] = st.number_input(
+                'Starting Balance',
+                value=session_state.expenses['start_balance']
+            )
 
-    expense_table.table(pd.DataFrame(session_state.expenses['expenses']).fillna(''))
+    headers[0].write(f"{session_state.expenses['stop_age'] - session_state.expenses['start_age']} Year Forecast ({session_state.expenses['start_age']} - {session_state.expenses['stop_age']})")
+    headers[0].write(f"Inflation: {(session_state.expenses['inflation'] * 100.0):.2f}% Interest: {(session_state.expenses['returns'] * 100.0):.2f}%")
 
+    """## Income Sources"""
+    if mode == 'GUI':
+        with st.beta_expander('Personal Notes'):
+            st.markdown('You can capture notes on your forecast here.')
+            if 'notes' in session_state.expenses:
+                default_notes = session_state.expenses['notes']
+            else:
+                default_notes = ''
+            personal_notes = st.text_area(
+                'Personal Notes',
+                value=default_notes,
+            )
+            session_state.expenses['notes'] = personal_notes
+        st.sidebar.markdown('GUI Controls')
+        with st.beta_expander('Define Income'):
+            st.markdown('Use the `New Income` input and `Add New Income` button in the sidbar to add another Income.')
+            if st.checkbox('Delete An Income Source?'):
+                left, right, = st.beta_columns((3,1))
+                delete_income_name = left.selectbox('Income Name', options=list(session_state.expenses['income'].keys()))
+                if right.button('Delete', key='delete_income'):
+                    session_state.expenses['income'].pop(delete_income_name, None)
+            st.markdown('### Income List')
+            income_dict = copy.deepcopy(session_state.expenses['income'])
+            session_state.expenses['income'].clear()
+            for index, item_key in enumerate(income_dict):
+                item = income_dict[item_key]
+                include, name, new_item = income_editor_dialog(
+                    st, 
+                    index,
+                    item_key, 
+                    item,
+                    session_state.expenses['start_age'],
+                )
+                if include:
+                    session_state.expenses['income'][name] = new_item
+                
+            new_name = st.sidebar.text_input('New Income', value='Income Name')
+            if st.sidebar.button('Add New Income'):
+                include, name, new_item = income_editor_dialog(
+                    st, 
+                    index+1,
+                    new_name, 
+                    {
+                        'amount': 0.0
+                    },
+                    session_state.expenses['start_age'],
+                    new=True,
+                )
+                if include:
+                    session_state.expenses['income'][name] = new_item
+        
+        with st.beta_expander('Define Expenses'):
+            st.markdown('Use the `New Expense` input and `Add New Expenses` button in the sidbar to add another Expense.')
+            if st.checkbox('Delete An Expense Source?'):
+                left, right, = st.beta_columns((3,1))
+                delete_income_name = left.selectbox('Expense Name', options=list(session_state.expenses['expenses'].keys()))
+                if right.button('Delete', key='delete_expense'):
+                    session_state.expenses['expenses'].pop(delete_income_name, None)
+            st.markdown('### Expense List')
+            expenses_dict = copy.deepcopy(session_state.expenses['expenses'])
+            session_state.expenses['expenses'].clear()
+            for index, item_key in enumerate(expenses_dict):
+                item = expenses_dict[item_key]
+                include, name, new_item = income_editor_dialog(
+                    st, 
+                    index,
+                    item_key, 
+                    item,
+                    session_state.expenses['start_age'],
+                    i_or_e='Expense',
+                    tax=False,
+                    inflate=True,
+                )
+                if include:
+                    session_state.expenses['expenses'][name] = new_item
+                
+            new_name = st.sidebar.text_input('New Expense', value='Expense Name')
+            if st.sidebar.button('Add New Expenses'):
+                include, name, new_item = income_editor_dialog(
+                    st, 
+                    index+1,
+                    new_name, 
+                    {
+                        'amount': 0.0
+                    },
+                    session_state.expenses['start_age'],
+                    i_or_e='Expense',
+                    new=True,
+                    tax=False,
+                    inflate=True,
+                )
+                if include:
+                    session_state.expenses['expenses'][name] = new_item
+
+
+    headers[1].write(f"{len(session_state.expenses['income'])} Income Sources")
+    headers[1].write(f"{len(session_state.expenses['expenses'])} Expense Sources")
+
+    temp_ss = copy.deepcopy(session_state.expenses)
+
+    with st.beta_expander('Adjust Fields'):
+        st.markdown("""These fields will allow working through possibilities, but
+they are not captured in the forecast that is saved.  Any changes you wish to be
+captured in the saved forecast must be made above.  Changes here will result in
+changes in the charts below and the summary at the top.""")
+        adjust_quantity = st.number_input('Adjustment Fields', value=1)
+        for adjustment_index in range(adjust_quantity):
+            left, middle_left, middle_right, right = st.beta_columns(4)
+            income_or_expense = left.radio(
+                'Type', 
+                options=['income', 'expenses'],
+                key=f'adjustment_type_{adjustment_index}'
+            )
+            item_name_options = [item_name for item_name in temp_ss[income_or_expense]]
+            item_names = middle_left.multiselect(
+                'Item Name', 
+                options=item_name_options,
+                key=f'items_{adjustment_index}'
+            )
+            field_name = middle_right.selectbox(
+                'Value', 
+                options=['stop_age', 'start_age', 'amount'],
+                key=f'adjustment_value_{adjustment_index}'
+            )
+            if len(item_names) > 0:
+                # Default to first selected item
+                try:
+                    default_adjust_value = temp_ss[income_or_expense][item_names[0]][field_name]
+                except KeyError:
+                    default_adjust_value = 0    
+            else:
+                default_adjust_value = 0
+            new_value = right.number_input(
+                field_name, 
+                value=default_adjust_value,
+                key=f'new_adjustment_value_{adjustment_index}'
+            )
+            for item_name in item_names:
+                temp_ss[income_or_expense][item_name][field_name] = new_value
+        
+    
     """ # Results """
-
-    if st.button(
-        'Download Forecast Configuration',
-        help='Save the current configuration locally',
-    ):
-        #https://raw.githubusercontent.com/MarcSkovMadsen/awesome-streamlit/master/gallery/file_download/file_download.py
-        b64 = base64.b64encode(configuration_edit.encode()).decode()  # some strings <-> bytes conversions necessary here
-        href = f'<a href="data:file/yaml;base64,{b64}">Download YAML File</a> (right-click and save as &lt;configuration&gt;.yaml)'
-        st.markdown(href, unsafe_allow_html=True)
-
-    balance_df, transaction_df, configuration = assess(session_state.expenses)
-
-    #balance_df.to_csv('balance.csv')
-
-    href = df_to_csv_download(balance_df, 'Download Balance Data (CSV)')
-    st.markdown(href, unsafe_allow_html=True)
-
-    href = df_to_csv_download(transaction_df, 'Download Income and Expenses Data (CSV)')
-    st.markdown(href, unsafe_allow_html=True)
-
+    st.sidebar.markdown('Results')
+    balance_df, transaction_df, configuration = assess(temp_ss)
     """### Key Statistics"""
 
     ending_balance = balance_df['balance'].values[-1]
@@ -212,29 +259,40 @@ def load_forecast_designer(st, session_state, config, configuration_content):
         ending_balance,
         grouping=True,
     )
-    st.write(f"Ending Balance: {ending_balance_str}")
-    if ending_balance < 0:
-        funds_extinguished_age = balance_df[balance_df['balance'].abs() == balance_df['balance'].abs().min()]['age'].values[0]
-        st.write(f'Funds extinguished at age {funds_extinguished_age}')
-    else:
-        st.write(f"Funds will support through age {configuration['stop_age']}")
+    headers[0].write(f"Ending Balance: {ending_balance_str}")
+    st.sidebar.write(f"Ending Balance: {ending_balance_str}")
 
     """### Plots"""
+    if st.checkbox('Show Charts'):
+        st.plotly_chart(assessment_plot(balance_df), use_container_width=True)
+        st.plotly_chart(
+            income_plot(transaction_df),
+            use_container_width=True
+        )
+        st.plotly_chart(
+            expense_plot(
+                transaction_df, [
+                    transaction_df['age'].min(),
+                    transaction_df['age'].max(),
+                ]),
+            use_container_width=True
+        )
 
-    st.plotly_chart(assessment_plot(balance_df), use_container_width=True)
-    st.plotly_chart(
-        income_plot(transaction_df),
-        use_container_width=True
-    )
-    st.plotly_chart(
-        expense_plot(
-            transaction_df, [
-                transaction_df['age'].min(),
-                transaction_df['age'].max(),
-            ]),
-        use_container_width=True
-    )
+        left, right = st.beta_columns(2)
+        left.plotly_chart(lifetime_expense(transaction_df), use_container_width=True)
+        right.plotly_chart(lifetime_income(transaction_df), use_container_width=True)
 
-    left, right = st.beta_columns(2)
-    left.plotly_chart(lifetime_expense(transaction_df), use_container_width=True)
-    right.plotly_chart(lifetime_income(transaction_df), use_container_width=True)
+    if configuration_edit is None:
+        configuration_edit = yaml.safe_dump(session_state.expenses)
+    #https://raw.githubusercontent.com/MarcSkovMadsen/awesome-streamlit/master/gallery/file_download/file_download.py
+    b64 = base64.b64encode(configuration_edit.encode()).decode()  # some strings <-> bytes conversions necessary here
+    href = f'<a href="data:file/yaml;base64,{b64}">Download Forecast File</a> (right-click and save as &lt;configuration&gt;.yaml)'
+    st.sidebar.markdown(href, unsafe_allow_html=True)
+
+    
+    
+    href = df_to_csv_download(balance_df, 'Download Balance Data (CSV)')
+    st.sidebar.markdown(href, unsafe_allow_html=True)
+
+    href = df_to_csv_download(transaction_df, 'Download Income and Expenses Data (CSV)')
+    st.sidebar.markdown(href, unsafe_allow_html=True)
