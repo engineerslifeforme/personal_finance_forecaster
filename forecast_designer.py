@@ -22,7 +22,7 @@ from streamlit_support import df_to_csv_download
 from constants import AGE_RANGE
 from income_editor import income_editor_dialog
 
-locale.setlocale(locale.LC_ALL, 'en_US')
+locale.setlocale(locale.LC_ALL, 'en_US.utf8')
 
 def load_forecast_designer(st, session_state, config, configuration_content):
     operation_mode = st.sidebar.radio('Live or Upload', ['Live', 'Upload Previously Saved Forecast'])
