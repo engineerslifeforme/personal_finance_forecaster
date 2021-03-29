@@ -55,7 +55,7 @@ def income_editor_dialog(st, index, item_key, item, start_age, i_or_e='Income', 
         if 'stop_age' in item:
             default_end_age = item['stop_age']
         else:
-            default_end_age = start_age
+            default_end_age = AGE_RANGE[1]
         new_item['stop_age'] = st.slider(
             f'Income Ends at Age',
             value = default_end_age,
@@ -88,7 +88,7 @@ def income_editor_dialog(st, index, item_key, item, start_age, i_or_e='Income', 
     if use_start_age:
         new_start_age = st.slider(
             'Income Starts at Age',
-            value=start_age,
+            value=default_start_age,
             min_value=AGE_RANGE[0],
             max_value=AGE_RANGE[1],
             key=f"{i_or_e}_start_age_{index}"
@@ -109,6 +109,7 @@ def income_editor_dialog(st, index, item_key, item, start_age, i_or_e='Income', 
             value = default_one_time,
             min_value=AGE_RANGE[0],
             max_value=AGE_RANGE[1],
+            key=f"{i_or_e}_one_time_{index}"
         )
         new_item['one_time'] = new_one_time
 
