@@ -26,3 +26,4 @@ pyyaml
 streamlit
 beautifulsoup4
 lxml
+babel
