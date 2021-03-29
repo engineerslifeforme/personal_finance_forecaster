@@ -1,12 +1,12 @@
 """ Forecast Designer Page """
 
-import locale
 import base64
 from io import StringIO
 import copy
 
 import pandas as pd
 import yaml
+import babel.numbers
 
 from business import (
     assess,
@@ -21,8 +21,6 @@ from designer_plots import (
 from streamlit_support import df_to_csv_download
 from constants import AGE_RANGE
 from income_editor import income_editor_dialog
-
-locale.setlocale(locale.LC_ALL, 'en_US.utf8')
 
 def load_forecast_designer(st, session_state, config, configuration_content):
     operation_mode = st.sidebar.radio('Live or Upload', ['Live', 'Upload Previously Saved Forecast'])
@@ -245,10 +243,7 @@ changes in the charts below and the summary at the top.""")
         balance_df, transaction_df, configuration = assess(temp_ss)
         st.markdown('### Key Statistics')
         ending_balance = balance_df['balance'].values[-1]
-        ending_balance_str = locale.currency(
-            ending_balance,
-            grouping=True,
-        )
+        ending_balance_str = babel.numbers.format_currency(ending_balance, 'USD', locale='en_US')
         st.markdown(f"Ending Balance: {ending_balance_str}")
         if st.checkbox('Display Plots (Slower)'):
             """### Plots"""
@@ -274,10 +269,7 @@ changes in the charts below and the summary at the top.""")
         balance_df, transaction_df, config = assess(session_state.expenses)
 
     ending_balance = balance_df['balance'].values[-1]
-    ending_balance_str = locale.currency(
-        ending_balance,
-        grouping=True,
-    )
+    ending_balance_str = babel.numbers.format_currency(ending_balance, 'USD', locale='en_US')
 
     st.sidebar.write(f"Ending Balance: {ending_balance_str}")
     
