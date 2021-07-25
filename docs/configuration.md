@@ -9,6 +9,9 @@ Instuctions for populating the configuration fields are provided below.
 ## Example
 
 ```{code-block} yaml
+# Variables (Optional, Advanced)
+retirement_age: 50
+---
 inflation: 0.02
 returns: 0.07
 start_age: 25
@@ -19,7 +22,7 @@ stop_age: 100
 income:
     - name: An Income
       amount: 5000.00 # monthly
-      stop_age: 40
+      stop_age: {{ retirement_age }}
       tax: 0.25
 expenses:
     - name: mortgage
@@ -217,4 +220,35 @@ One time expense of $20,000.00 at age 40.
 - name: New Car
   amount: 20000.00
   one_time: 40
+```
+
+## Variables
+
+Optionally, variables may be used to allow easier management of
+repeated use of certain values.  For example, multiple income
+streams (and possibly multiple expense streams) may end or being
+after retirement.  `Variables` must be placed at the beginning
+of the YAML file followed by `---`:
+
+```{code-block} yaml
+retirement_age: 50
+---
+...
+income:
+    - name: An Income
+      amount: 5000.00 # monthly
+      stop_age: {{ retirement_age }}
+      tax: 0.25
+```
+
+`Variables` are powered by the [jinja2](https://jinja.palletsprojects.com/en/3.0.x/).
+Each of the key, value pairs above the `---` are available through
+jinja syntax: `{{ KEY }}`.  See how `{{ retirement_age }}` is
+used above.
+
+Also, more powerful techniques are possible, e.g.:
+
+```{code-block} yaml
+# Something that stops 5 years after retirement
+stop_age: {{ retirement_age + 5 }}
 ```
